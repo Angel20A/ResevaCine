@@ -8,6 +8,7 @@ const getFunciones = async (req, res) => {
             SELECT 
                 f.IDfuncion,
                 f.FechaHora,
+                f.Precio,
                 p.Nombre AS Pelicula,
                 p.Duracion,
                 g.Nombre AS Genero,
@@ -48,13 +49,20 @@ const getAsientosPorFuncion = async (req, res) => {
                     ELSE 0 
                 END AS Ocupado
             FROM Asiento a
+            -- primero, traer solo los asientos de la sala de esta función
             INNER JOIN Funcion f ON a.IDsala = f.IDsala
-            LEFT JOIN ReservaDetalle rd ON a.IDasiento = rd.IDasiento
-            LEFT JOIN Reserva r ON rd.IDreserva = r.IDreserva 
-                AND r.IDfuncion = f.IDfuncion 
-                AND r.IDestado IN (1, 2) -- 1 = Reservada, 2 = Confirmada
-            WHERE f.IDfuncion = @idFuncion
-        `);
+            -- left join a los detalles de reserva, pero cruzando también con la reserva principal
+            --    para asegurar de que la reserva corresponde a la función consultada
+            LEFT JOIN (
+                SELECT rd.IDasiento, rd.IDreservadetalle
+                FROM ReservaDetalle rd
+                INNER JOIN Reserva r ON rd.IDreserva = r.IDreserva
+                -- filtra solo la función actual y estados activos
+                WHERE r.IDfuncion = @idFuncion
+                AND r.IDestado IN (SELECT IDestado FROM Estado WHERE Nombre IN ('Reservada', 'Confirmada', 'Utilizada'))
+            ) rd ON a.IDasiento = rd.IDasiento
+            WHERE f.IDfuncion = @idFuncion;
+        `)
 
         if (result.recordset.length === 0) {
             return res.status(404).json({ error: 'No se encontraron asientos para esta función o la función no existe.' });

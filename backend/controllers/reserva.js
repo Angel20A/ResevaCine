@@ -1,10 +1,40 @@
 const { poolPromise, sql } = require('../config/db');
 
+const getReservas = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT 
+                r.IDreserva, 
+                c.Nombre AS Cliente, 
+                p.Nombre AS Pelicula, 
+                f.FechaHora, 
+                r.Total,
+                e.Nombre AS EstadoNombre,
+                r.IDestado
+            FROM Reserva r
+            INNER JOIN Cliente c ON r.IDcliente = c.IDcliente
+            INNER JOIN Funcion f ON r.IDfuncion = f.IDfuncion
+            INNER JOIN Pelicula p ON f.IDpelicula = p.IDpelicula
+            INNER JOIN Estado e ON r.IDestado = e.IDestado
+            ORDER BY r.IDreserva DESC
+        `);
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error al obtener reservas:', error.message);
+        res.status(500).json({ error: 'Error interno del servidor.' });
+    }
+};
+
 const crearReserva = async (req, res) => {
     const { idFuncion, idTipoPago, idCliente, asientos } = req.body;
 
     if (!asientos || asientos.length === 0) {
         return res.status(400).json({ error: 'Debe enviar al menos un asiento.' });
+    }
+
+    if (asientos.length > 10) {
+        return res.status(400).json({ error: 'No se pueden reservar más de 10 asientos por reserva.' });
     }
 
     // Espera el pool de conexiones
@@ -19,12 +49,13 @@ const crearReserva = async (req, res) => {
         // Valida si la función existe y obtiene su Sala
         request.input('idFuncion', sql.Int, idFuncion);
         const funcionRes = await request.query(`
-            SELECT IDsala FROM Funcion WHERE IDfuncion = @idFuncion
+            SELECT IDsala, Precio FROM Funcion WHERE IDfuncion = @idFuncion
         `);
         if (funcionRes.recordset.length === 0) {
             throw new Error('La función solicitada no existe.');
         }
         const idSalaFuncion = funcionRes.recordset[0].IDsala;
+        const precioFuncion = funcionRes.recordset[0].Precio;
 
         // Validar que los asientos existan y pertenezcan a la sala correcta
         const asientosList = asientos.join(',');
@@ -52,14 +83,16 @@ const crearReserva = async (req, res) => {
             throw new Error('Condición de carrera: Uno o más asientos ya fueron reservados por otro cliente.');
         }
 
+        const total = asientos.length * precioFuncion;
         // Si pasa todas las validaciones, reliza insercion de reserva
         request.input('idTipoPago', sql.Int, idTipoPago);
         request.input('idCliente', sql.Int, idCliente);
+        request.input('total', sql.Decimal(10, 2), total);
 
         const insertReserva = await request.query(`
-            INSERT INTO Reserva (IDfuncion, IDtipopago, IDestado, IDcliente, Fecha)
+            INSERT INTO Reserva (IDfuncion, IDtipopago, IDestado, IDcliente, Fecha, Total)
             OUTPUT INSERTED.IDreserva
-            VALUES (@idFuncion, @idTipoPago, 1, @idCliente, GETDATE())
+            VALUES (@idFuncion, @idTipoPago, 1, @idCliente, GETDATE(), @total)
         `);
 
         const nuevaReservaId = insertReserva.recordset[0].IDreserva;
@@ -130,6 +163,7 @@ const actualizarEstadoReserva = async (req, res) => {
 };
 
 module.exports = {
+    getReservas,
     crearReserva,
     actualizarEstadoReserva
 };
