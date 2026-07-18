@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Taquilla from '../views/Taquilla.vue';
-import AdminReservas from '../components/AdminReservas.vue';
+import AdminReservas from '../components/adminReservas.vue';
+import ReporteTaquilla from '../components/ReporteTaquilla.vue';
+
 const routes = [
     {
         path: '/',
@@ -11,6 +13,11 @@ const routes = [
         path: '/admin',
         name: 'Admin',
         component: AdminReservas
+    },
+    {
+        path: '/admin/reporte',
+        name: 'Reporte',
+        component: ReporteTaquilla
     }
 ];
 

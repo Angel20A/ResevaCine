@@ -1,5 +1,5 @@
 <template>
-    <div class="mt-4">
+  <div class="mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Administración de Reservas</h2>
       <button class="btn btn-outline-primary btn-sm" @click="cargarReservas">
@@ -48,33 +48,22 @@
             <td class="text-center">
               <!-- Solo muestra acciones si está "Reservada" (1) o "Confirmada" (2) -->
               <div class="d-flex justify-content-center gap-2" v-if="reserva.IDestado === 1 || reserva.IDestado === 2">
-                
+
                 <!-- Botón Confirmar (Solo visible si está Reservada = 1) -->
-                <button 
-                  v-if="reserva.IDestado === 1" 
-                  class="btn btn-sm btn-success" 
-                  title="Confirmar/Pagar"
-                  @click="cambiarEstado(reserva.IDreserva, 2)"
-                >
+                <button v-if="reserva.IDestado === 1" class="btn btn-sm btn-success" title="Confirmar/Pagar"
+                  @click="cambiarEstado(reserva.IDreserva, 2)">
                   <i class="bi bi-check-lg"></i>
                 </button>
 
                 <!-- Botón Utilizar (Solo visible si está Confirmada = 2) -->
-                <button 
-                  v-if="reserva.IDestado === 2" 
-                  class="btn btn-sm btn-primary" 
-                  title="Marcar como Utilizada"
-                  @click="cambiarEstado(reserva.IDreserva, 5)"
-                >
+                <button v-if="reserva.IDestado === 2" class="btn btn-sm btn-primary" title="Marcar como Utilizada"
+                  @click="cambiarEstado(reserva.IDreserva, 5)">
                   <i class="bi bi-ticket-perforated"></i>
                 </button>
 
                 <!-- Botón Cancelar -->
-                <button 
-                  class="btn btn-sm btn-danger" 
-                  title="Cancelar Reserva"
-                  @click="cambiarEstado(reserva.IDreserva, 3)"
-                >
+                <button class="btn btn-sm btn-danger" title="Cancelar Reserva"
+                  @click="cambiarEstado(reserva.IDreserva, 3)">
                   <i class="bi bi-trash"></i>
                 </button>
 
@@ -98,12 +87,13 @@ import { useAdmin } from '../composables/useAdmin';
 const { reservas, cargando, error, cargarReservas, cambiarEstado } = useAdmin();
 
 const formatearFecha = (fechaString) => {
-    return new Date(fechaString).toLocaleString('es-GT', { 
-        dateStyle: 'short', timeStyle: 'short' 
-    });
+  return new Date(fechaString).toLocaleString('es-GT', {
+    dateStyle: 'short', timeStyle: 'short',
+    timeZone: 'UTC'
+  });
 };
 
 onMounted(() => {
-    cargarReservas();
+  cargarReservas();
 });
 </script>
