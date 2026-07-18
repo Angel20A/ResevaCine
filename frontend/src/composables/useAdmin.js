@@ -7,6 +7,7 @@ export function useAdmin() {
     const reservas = ref([]);
     const cargando = ref(false);
     const error = ref(null);
+    const reporte = ref([]);
 
     const cargarReservas = async () => {
         cargando.value = true;
@@ -34,11 +35,26 @@ export function useAdmin() {
         }
     };
 
+    const cargarReporte = async () => {
+        cargando.value = true;
+        error.value = null;
+        try {
+            const { data } = await api.get('/reservas/reporte');
+            reporte.value = data;
+        } catch (err) {
+            error.value = 'Error al cargar el reporte de taquilla.';
+        } finally {
+            cargando.value = false;
+        }
+    };
+
     return {
         reservas,
         cargando,
         error,
         cargarReservas,
-        cambiarEstado
+        cambiarEstado,
+        reporte,
+        cargarReporte
     };
 }

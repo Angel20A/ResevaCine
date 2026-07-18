@@ -57,6 +57,22 @@ const crearReserva = async (req, res) => {
         const idSalaFuncion = funcionRes.recordset[0].IDsala;
         const precioFuncion = funcionRes.recordset[0].Precio;
 
+        const checkTiempo = await transaction.request()
+            .input('idFuncion', sql.Int, idFuncion)
+            .query(`SELECT 
+                    CASE 
+                        WHEN FechaHora <= GETDATE() THEN 1 
+                        ELSE 0 
+                    END AS YaInicio 
+                FROM Funcion 
+                WHERE IDfuncion = @idFuncion`
+            );
+        // Si la hora actual es mayor a la hora de la función, la rechaza.
+        if (checkTiempo.recordset[0].YaInicio === 1) {
+            throw new Error('La función ya inició. Transacción rechazada por seguridad.');
+        }
+
+
         // Validar que los asientos existan y pertenezcan a la sala correcta
         const asientosList = asientos.join(',');
         const asientosRes = await request.query(`
@@ -162,8 +178,56 @@ const actualizarEstadoReserva = async (req, res) => {
     }
 };
 
+const getReporteTaquilla = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+
+        // Trae las funciones con la suma de asientos
+        const funciones = await pool.request().query(`
+            SELECT 
+                f.IDfuncion, p.Nombre AS Pelicula, s.Nombre AS Sala, f.FechaHora,
+                s.Capacidad AS TotalAsientos,
+                (
+                    SELECT COUNT(rd.IDasiento) 
+                    FROM ReservaDetalle rd 
+                    INNER JOIN Reserva r ON rd.IDreserva = r.IDreserva 
+                    WHERE r.IDfuncion = f.IDfuncion AND r.IDestado IN (SELECT IDestado FROM Estado WHERE Nombre in ('Reservada', 'Confirmada', 'Utilizada'))
+                ) AS Ocupados
+            FROM Funcion f
+            INNER JOIN Pelicula p ON f.IDpelicula = p.IDpelicula
+            INNER JOIN Sala s ON f.IDsala = s.IDsala
+            ORDER BY f.FechaHora DESC
+        `);
+
+        // Trae todas las reservas con sus estados
+        const reservas = await pool.request().query(`
+            SELECT 
+                r.IDfuncion, r.IDreserva, c.Nombre AS Cliente, e.Nombre AS Estado, r.Total
+            FROM Reserva r
+            INNER JOIN Cliente c ON r.IDcliente = c.IDcliente
+            INNER JOIN Estado e ON r.IDestado = e.IDestado
+        `);
+
+        // Se mapean y anidan las reservas dentro de su respectiva función
+        const reporteFinal = funciones.recordset.map(f => {
+            return {
+                ...f,
+                Disponibles: f.TotalAsientos - f.Ocupados,
+                // Se filtran solo las reservas que pertenecen a esta función
+                ReservasDetalle: reservas.recordset.filter(r => r.IDfuncion === f.IDfuncion)
+            };
+        });
+
+        res.json(reporteFinal);
+    } catch (error) {
+        console.error('Error al generar reporte:', error.message);
+        res.status(500).json({ error: 'Error interno al generar el reporte.' });
+    }
+};
+
 module.exports = {
     getReservas,
     crearReserva,
-    actualizarEstadoReserva
+    actualizarEstadoReserva,
+    getReporteTaquilla
 };
