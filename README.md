@@ -14,14 +14,172 @@ asientos por función, crear reservas y gestionar el estado de cada una
   - Node.js v18 o superior
   - Una instancia de SQL Server accesible (local o remota)
 
-##  Configurar la base de datos
+##  1. Configurar la base de datos
   1. Crear una base de datos vacía en la instancia de SQL Server (ejemplo: ReservaCine).
   2. Ejecutar el script de creación de tablas:
+````
+CREATE TABLE Estado (
+    IDestado INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE TipoPago (
+    IDtipopago INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE Genero (
+    IDgenero INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE Clasificacion (
+    IDclasificacion INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE Cliente (
+    IDcliente INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(150) NOT NULL,
+    Apellido VARCHAR(150) NOT NULL,
+    NIT VARCHAR(15) NULL
+);
+
+CREATE TABLE Sala (
+    IDsala INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(50) NOT NULL,
+    Capacidad INT NOT NULL
+);
+
+CREATE TABLE Pelicula (
+    IDpelicula INT IDENTITY(1,1) PRIMARY KEY,
+    Nombre VARCHAR(150) NOT NULL,
+    Duracion INT NOT NULL,
+    IDgenero INT NOT NULL,
+    IDclasificacion INT NOT NULL,
+    FOREIGN KEY (IDgenero) REFERENCES Genero(IDgenero),
+    FOREIGN KEY (IDclasificacion) REFERENCES Clasificacion(IDclasificacion)
+);
+
+CREATE TABLE Asiento (
+    IDasiento INT IDENTITY(1,1) PRIMARY KEY,
+    IDsala INT NOT NULL,
+    Codigo VARCHAR(10) NOT NULL,
+    FOREIGN KEY (IDsala) REFERENCES Sala(IDsala),
+    CONSTRAINT UQ_Sala_Asiento UNIQUE (IDsala, Codigo)
+);
+
+CREATE TABLE Funcion (
+    IDfuncion INT IDENTITY(1,1) PRIMARY KEY,
+    IDsala INT NOT NULL,
+    IDpelicula INT NOT NULL,
+    FechaHora DATETIME NOT NULL,
+    Precio DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (IDsala) REFERENCES Sala(IDsala),
+    FOREIGN KEY (IDpelicula) REFERENCES Pelicula(IDpelicula),
+    CONSTRAINT CK_Funcion_Precio CHECK (Precio >= 0)
+);
+
+CREATE TABLE Reserva (
+    IDreserva INT IDENTITY(1,1) PRIMARY KEY,
+    IDfuncion INT NOT NULL,
+    IDtipopago INT NOT NULL,
+    IDestado INT NOT NULL,
+    IDcliente INT NOT NULL,
+    Fecha DATETIME DEFAULT GETDATE() NOT NULL,
+    Total DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (IDfuncion) REFERENCES Funcion(IDfuncion),
+    FOREIGN KEY (IDtipopago) REFERENCES TipoPago(IDtipopago),
+    FOREIGN KEY (IDestado) REFERENCES Estado(IDestado),
+    FOREIGN KEY (IDcliente) REFERENCES Cliente(IDcliente),
+    CONSTRAINT CK_Reserva_Total CHECK (Total >= 0)
+);
+
+CREATE TABLE ReservaDetalle (
+    IDreservadetalle INT IDENTITY(1,1) PRIMARY KEY,
+    IDreserva INT NOT NULL,
+    IDasiento INT NOT NULL,
+    FOREIGN KEY (IDreserva) REFERENCES Reserva(IDreserva),
+    FOREIGN KEY (IDasiento) REFERENCES Asiento(IDasiento),
+    CONSTRAINT UQ_Reserva_Asiento UNIQUE (IDreserva, IDasiento) -- un asiento no se repite dentro de la misma reserva
+);
+````
 
   3. (Opcional para probar) Ejecutar el script de datos de ejemplo, una sola vez y justo después del anterior:
+````
+INSERT INTO Genero (Nombre) VALUES ('Acción'), ('Animación'), ('Comedia'), ('Terror');
+
+INSERT INTO Clasificacion (Nombre) VALUES ('A - Todo público'), ('B - Mayores de 12 años'), ('C - Mayores de 18 años');
+
+INSERT INTO Estado (Nombre) VALUES ('Reservada'), ('Confirmada'), ('Cancelada'), ('Expirada'), ('Utilizada');
+
+INSERT INTO TipoPago (Nombre) VALUES ('Efectivo'), ('Tarjeta');
 
 
-## Configuración de backend
+INSERT INTO Cliente (Nombre, Apellido, NIT) VALUES
+('Carlos', 'Ramírez', '123456-7'),
+('María', 'López', '765432-1'),
+('Luis', 'Gómez', '849382123');
+
+INSERT INTO Sala (Nombre, Capacidad) VALUES
+('Sala 1', 15),
+('Sala 2', 15);
+
+INSERT INTO Asiento (IDsala, Codigo) VALUES
+(1, 'A1'), (1, 'A2'), (1, 'A3'), (1, 'A4'), (1, 'A5'),
+(1, 'B1'), (1, 'B2'), (1, 'B3'), (1, 'B4'), (1, 'B5'),
+(1, 'C1'), (1, 'C2'), (1, 'C3'), (1, 'C4'), (1, 'C5'),
+(2, 'A1'), (2, 'A2'), (2, 'A3'), (2, 'A4'), (2, 'A5'),
+(2, 'B1'), (2, 'B2'), (2, 'B3'), (2, 'B4'), (2, 'B5'),
+(2, 'C1'), (2, 'C2'), (2, 'C3'), (2, 'C4'), (2, 'C5');
+
+INSERT INTO Pelicula (Nombre, Duracion, IDgenero, IDclasificacion) VALUES
+('Avengers: Endgame', 181, 1, 2),
+('Shrek', 90, 2, 1),
+('Rápidos y Furiosos', 143, 1, 2),
+('Batman', 112, 1, 3);
+
+INSERT INTO Funcion (IDsala, IDpelicula, FechaHora, Precio) VALUES
+(1, 1, '2026-07-18 14:00', 35.00),
+(1, 3, '2026-07-18 18:00', 38.00),
+(2, 2, '2026-07-18 15:30', 30.00),
+(2, 4, '2026-07-18 21:00', 32.00); 
+
+INSERT INTO Reserva (IDfuncion, IDtipopago, IDestado, IDcliente, Fecha, Total) VALUES
+(1, 1, 2, 1, GETDATE(), 70.00);
+INSERT INTO ReservaDetalle (IDreserva, IDasiento) VALUES
+(1, 1),
+(1, 2);
+
+INSERT INTO Reserva (IDfuncion, IDtipopago, IDestado, IDcliente, Fecha, Total) VALUES
+(3, 2, 1, 2, GETDATE(), 30.00);
+INSERT INTO ReservaDetalle (IDreserva, IDasiento) VALUES
+(2, 16);
+````
+
+## 2. Creación de .env:
+- En la carpeta /backend, crear un archivo .env y colocar lo siguiente (cambiar los datos de ejemplo por los reales):
+```
+# Usuario de SQL Server
+DB_USER=sa
+
+# Contraseña del usuario de SQL Server
+DB_PASSWORD=
+
+# Host donde corre SQL Server (ej. localhost)
+DB_SERVER=localhost
+
+# Nombre de la base de datos
+DB_DATABASE=ReservaCine
+
+# Puerto de SQL Server (por defecto 1433)
+DB_PORT=1433
+
+# Puerto donde correrá el servidor de la API
+PORT=3000
+```
+
+## 3. Configuración de backend
   En terminal:
   ```
 cd backend
@@ -42,7 +200,7 @@ npm run dev
 Por defecto, el frontend corre en http://localhost:5173 y espera que el backend
 esté disponible en http://localhost:3000/api.
 
-## Estructura del proyecto
+## 4. Estructura del proyecto
 ```
 ResevaCine/
 ├── backend/          # API REST (Express + SQL Server)
