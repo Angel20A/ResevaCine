@@ -191,7 +191,7 @@ npm run dev
 ```
 La API quedará disponible en http://localhost:3000/api por ejemplo.
 
-## Configuración del frontend
+## 4 Configuración del frontend
 ```
 cd frontend
 npm install
@@ -200,7 +200,7 @@ npm run dev
 Por defecto, el frontend corre en http://localhost:5173 y espera que el backend
 esté disponible en http://localhost:3000/api.
 
-## 4. Estructura del proyecto
+## Estructura del proyecto
 ```
 ResevaCine/
 ├── backend/          # API REST (Express + SQL Server)
