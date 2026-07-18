@@ -14,6 +14,8 @@ asientos por función, crear reservas y gestionar el estado de cada una
   - Node.js v18 o superior
   - Una instancia de SQL Server accesible (local o remota)
 
+</br>
+
 ##  1. Configurar la base de datos
   1. Crear una base de datos vacía en la instancia de SQL Server (ejemplo: ReservaCine).
   2. Ejecutar el script de creación de tablas:
@@ -191,7 +193,7 @@ npm run dev
 ```
 La API quedará disponible en http://localhost:3000/api por ejemplo.
 
-## 4 Configuración del frontend
+## 4. Configuración del frontend
 ```
 cd frontend
 npm install
@@ -199,6 +201,9 @@ npm run dev
 ```
 Por defecto, el frontend corre en http://localhost:5173 y espera que el backend
 esté disponible en http://localhost:3000/api.
+
+</br>
+</br>
 
 ## Estructura del proyecto
 ```
@@ -213,3 +218,14 @@ ResevaCine/
 │   ├── composables/         # scripts .js donde se consume la api
 │   └── src/
 ```
+
+## Galería del proyecto
+<img width="1919" height="1107" alt="image" src="https://github.com/user-attachments/assets/0e8cb127-a34b-4a37-a123-22c6dc4552cc" />
+<img width="1919" height="1107" alt="image" src="https://github.com/user-attachments/assets/c226a9c7-4d05-4897-aefb-fd96d4afc98d" />
+<img width="1919" height="1113" alt="image" src="https://github.com/user-attachments/assets/e957faa3-2404-423d-88c4-e9e0cb5f3771" />
+<img width="1919" height="1104" alt="image" src="https://github.com/user-attachments/assets/fd3eec56-acf8-4741-a3eb-85dbae8408e0" />
+<img width="1919" height="1108" alt="image" src="https://github.com/user-attachments/assets/624d8ccf-7b97-44c5-b94a-caa7ee879133" />
+<img width="1919" height="1107" alt="image" src="https://github.com/user-attachments/assets/67c7fd59-f5d2-49f0-88c3-92da65dc9694" />
+
+
+
